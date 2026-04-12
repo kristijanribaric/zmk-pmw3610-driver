@@ -20,6 +20,12 @@ This driver had been tested on [my PMW3610 breakout board](https://github.com/ba
 - Default to use power saving config. Applying shorter-than-default downshift time to PMW3610.
 - Deprecated manual *chip-select*. Refactored to use Zephyr's `spi_transceive_dt()`. That allow the sensor could be attacted to a shared SPI bus, works along with others SPI peripherals, such as display module.
 
+#### What is different to [Zephyr PMW3610 driver](https://github.com/zephyrproject-rtos/zephyr/blob/main/drivers/input/input_pmw3610.c)
+- X and Y axes are reported independently, allowing zero values to be cancelled out to minimize packet size over the air for better wireless experience.
+- ZMK-specific: Supports `force-awake` & `force-awake-4ms-mode` to keep sensor awake during ZMK ACTIVE state, acting as a wakeup source.
+- Separates sampling rate from reporting rate — accumulates XY motion data between interrupts and reports at configurable intervals (`CONFIG_PMW3610_ALT_REPORT_INTERVAL_MIN`) to reduce report count for high CPI sensors in noisy RF environments while maintaining lossless cursor tracking.
+- Deprecated reset pin control, relying on software reset via SPI commands.
+
 ## Installation
 
 Include this project on ZMK's west manifest in `config/west.yml`:
@@ -91,12 +97,12 @@ Update `board.overlay` adding the necessary bits (update the pins for your board
         x-input-code = <INPUT_REL_X>;
         y-input-code = <INPUT_REL_Y>;
 
-        force-awake;
+        // force-awake; /* optional */
         /* keep the sensor awake while ZMK activity state is ACTIVE,
            fallback to normal downshift mode after ZMK goes into IDLE / SLEEP mode.
            thus, the sensor would be a `wakeup-source` */
 
-        force-awake-4ms-mode;
+        // force-awake-4ms-mode; /* optional */
         /* while force-awake is acitvated, enable this mode to force sampling per 
            4ms, where the default sampling rate is 8ms. */
         /* NOTE: apply this mode if you need 250Hz with direct USB connection. */
