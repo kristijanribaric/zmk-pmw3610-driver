@@ -43,6 +43,27 @@ config PMW3610_ALT_REPORT_INTERVAL_MIN
 		Slow down input reporting for hid queue over the air.
 		Turn value down to 8ms to get sharp response if use with USB only.
 
+config PMW3610_ALT_DEDICATED_WORKQUEUE
+  bool "Use a dedicated workqueue for PMW3610 motion reports"
+  default y
+  help
+    Process motion IRQ work on a dedicated queue instead of Zephyr's shared
+    system workqueue. This reduces pointer latency when display, BLE, or other
+    subsystems are also using the system workqueue.
+
+config PMW3610_ALT_WORKQUEUE_STACK_SIZE
+  int "PMW3610 dedicated workqueue stack size"
+  default 1024
+  depends on PMW3610_ALT_DEDICATED_WORKQUEUE
+
+config PMW3610_ALT_WORKQUEUE_PRIORITY
+  int "PMW3610 dedicated workqueue priority"
+  default -1
+  depends on PMW3610_ALT_DEDICATED_WORKQUEUE
+  help
+    Lower values are higher priority. A cooperative priority keeps motion
+    handling responsive without waiting behind the shared system workqueue.
+
 config PMW3610_ALT_SMART_ALGORITHM
   bool "Enable an algorithm of PMW3610 to enhance surface coverage"
   default y

@@ -7,6 +7,7 @@
 #define DT_DRV_COMPAT pixart_pmw3610_alt
 
 #include <zephyr/kernel.h>
+#include <zephyr/init.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/input/input.h>
 #include <zephyr/pm/device.h>
@@ -16,6 +17,20 @@
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(pmw3610, CONFIG_PMW3610_ALT_LOG_LEVEL);
+
+#if IS_ENABLED(CONFIG_PMW3610_ALT_DEDICATED_WORKQUEUE)
+K_THREAD_STACK_DEFINE(pmw3610_workq_stack, CONFIG_PMW3610_ALT_WORKQUEUE_STACK_SIZE);
+static struct k_work_q pmw3610_work_q;
+
+static int pmw3610_work_queue_init(void) {
+    k_work_queue_start(&pmw3610_work_q, pmw3610_workq_stack,
+                       K_THREAD_STACK_SIZEOF(pmw3610_workq_stack),
+                       CONFIG_PMW3610_ALT_WORKQUEUE_PRIORITY, NULL);
+    return 0;
+}
+
+SYS_INIT(pmw3610_work_queue_init, POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEFAULT);
+#endif
 
 //////// Sensor initialization steps definition //////////
 // init is done in non-blocking manner (i.e., async), a //
@@ -511,7 +526,11 @@ static void pmw3610_gpio_callback(const struct device *gpiob, struct gpio_callba
     struct pixart_data *data = CONTAINER_OF(cb, struct pixart_data, irq_gpio_cb);
     const struct device *dev = data->dev;
     pmw3610_set_interrupt(dev, false);
+#if IS_ENABLED(CONFIG_PMW3610_ALT_DEDICATED_WORKQUEUE)
+    k_work_submit_to_queue(&pmw3610_work_q, &data->trigger_work);
+#else
     k_work_submit(&data->trigger_work);
+#endif
 }
 
 static void pmw3610_work_callback(struct k_work *work) {
