@@ -468,12 +468,28 @@ static int pmw3610_report_data(const struct device *dev) {
     LOG_DBG("x/y: %d/%d", x, y);
 
 #if CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD > 0
-    if (abs(x) <= CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD) {
-        x = 0;
+    int64_t threshold_now = k_uptime_get();
+    if (data->last_threshold_time > 0 &&
+        threshold_now - data->last_threshold_time >
+            CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD_WINDOW_MS) {
+        data->threshold_dx = 0;
+        data->threshold_dy = 0;
     }
-    if (abs(y) <= CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD) {
-        y = 0;
+
+    data->threshold_dx += x;
+    data->threshold_dy += y;
+    data->last_threshold_time = threshold_now;
+
+    if (llabs(data->threshold_dx) + llabs(data->threshold_dy) <=
+        CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD) {
+        return 0;
     }
+
+    x = (int16_t)CLAMP(data->threshold_dx, INT16_MIN, INT16_MAX);
+    y = (int16_t)CLAMP(data->threshold_dy, INT16_MIN, INT16_MAX);
+    data->threshold_dx = 0;
+    data->threshold_dy = 0;
+    data->last_threshold_time = 0;
 #endif
 
 #ifdef CONFIG_PMW3610_ALT_SMART_ALGORITHM
@@ -594,6 +610,9 @@ static int pmw3610_init(const struct device *dev) {
     data->dev = dev;
     data->dx = 0;
     data->dy = 0;
+    data->threshold_dx = 0;
+    data->threshold_dy = 0;
+    data->last_threshold_time = 0;
 #if CONFIG_PMW3610_ALT_REPORT_INTERVAL_MIN > 0
     data->last_smp_time = 0;
     data->last_rpt_time = 0;

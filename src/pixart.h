@@ -20,6 +20,9 @@ struct pixart_data {
     const struct device          *dev;
     int64_t                      dx;
     int64_t                      dy;
+    int64_t                      threshold_dx;
+    int64_t                      threshold_dy;
+    int64_t                      last_threshold_time;
 #if CONFIG_PMW3610_ALT_REPORT_INTERVAL_MIN > 0
     int64_t                      last_smp_time;
     int64_t                      last_rpt_time;

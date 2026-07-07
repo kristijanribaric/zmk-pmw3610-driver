@@ -48,9 +48,18 @@ config PMW3610_ALT_MOVEMENT_THRESHOLD
   default 0
   range 0 127
   help
-    Ignore single-axis motion deltas with an absolute value less than or equal
-    to this threshold. This filters small vibration/noise movements before they
-    become cursor reports or ZMK activity events.
+    Suppress isolated startup motion until accumulated X/Y movement is greater
+    than this threshold. Once exceeded, accumulated movement is reported, so
+    deliberate fine-grained movement is preserved while typing vibration is
+    filtered.
+
+config PMW3610_ALT_MOVEMENT_THRESHOLD_WINDOW_MS
+  int "PMW3610 movement threshold accumulation window"
+  default 80
+  depends on PMW3610_ALT_MOVEMENT_THRESHOLD > 0
+  help
+    Reset pending threshold movement after this many milliseconds without enough
+    movement to cross PMW3610_ALT_MOVEMENT_THRESHOLD.
 
 config PMW3610_ALT_DEDICATED_WORKQUEUE
   bool "Use a dedicated workqueue for PMW3610 motion reports"
