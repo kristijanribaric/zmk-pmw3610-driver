@@ -6,6 +6,8 @@
 
 #define DT_DRV_COMPAT pixart_pmw3610_alt
 
+#include <stdlib.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/init.h>
 #include <zephyr/sys/byteorder.h>
@@ -464,6 +466,15 @@ static int pmw3610_report_data(const struct device *dev) {
     int16_t x = TOINT16((buf[PMW3610_X_L_POS] + ((buf[PMW3610_XY_H_POS] & 0xF0) << 4)), 12);
     int16_t y = TOINT16((buf[PMW3610_Y_L_POS] + ((buf[PMW3610_XY_H_POS] & 0x0F) << 8)), 12);
     LOG_DBG("x/y: %d/%d", x, y);
+
+#if CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD > 0
+    if (abs(x) <= CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD) {
+        x = 0;
+    }
+    if (abs(y) <= CONFIG_PMW3610_ALT_MOVEMENT_THRESHOLD) {
+        y = 0;
+    }
+#endif
 
 #ifdef CONFIG_PMW3610_ALT_SMART_ALGORITHM
     int16_t shutter = ((int16_t)(buf[PMW3610_SHUTTER_H_POS] & 0x01) << 8) 

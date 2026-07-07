@@ -43,6 +43,15 @@ config PMW3610_ALT_REPORT_INTERVAL_MIN
 		Slow down input reporting for hid queue over the air.
 		Turn value down to 8ms to get sharp response if use with USB only.
 
+config PMW3610_ALT_MOVEMENT_THRESHOLD
+  int "PMW3610 movement threshold"
+  default 0
+  range 0 127
+  help
+    Ignore single-axis motion deltas with an absolute value less than or equal
+    to this threshold. This filters small vibration/noise movements before they
+    become cursor reports or ZMK activity events.
+
 config PMW3610_ALT_DEDICATED_WORKQUEUE
   bool "Use a dedicated workqueue for PMW3610 motion reports"
   default y
